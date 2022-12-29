@@ -41,7 +41,7 @@ export default {
   .v-table__wrapper {
 
     overflow-y: scroll;
-    height: 80vh;
+    height: 75vh;
 
     &::-webkit-scrollbar {
       visibility: hidden;

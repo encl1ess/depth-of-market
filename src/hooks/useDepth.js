@@ -8,7 +8,6 @@ export function useDepth(symbol='BTCUSDT', limit = 500) {
         try {
             const response = await axios.get(`https://api.binance.com/api/v3/depth?symbol=${symbol}&limit=${limit}`)
             depthRecords.value = response.data;
-            console.log(depthRecords)
         } catch (e) {
             alert(e)
         } finally {

@@ -1,8 +1,12 @@
 <template>
-  <navbar/>
-  <main>
-    <router-view/>
-  </main>
+  <v-app >
+    <navbar />
+    <v-main class="d-flex align-start justify-center">
+      <v-container class="d-flex align-start justify-center h-100">
+        <router-view />
+      </v-container>
+    </v-main>
+  </v-app>
 </template>
 
 <script>
@@ -16,28 +20,17 @@ export default {
 </script>
 
 <style lang="scss">
+
+html {
+  overflow: hidden !important;
+}
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  overflow: none;
+ 
 }
 
-nav {
-  padding: 30px;
-  a {
-    font-weight: bold;
-    color: #2c3e50;
-
-    &.router-link-exact-active {
-      color: #42b983;
-    }
-  }
-}
-main {
-  padding: 2em;
-  min-height: 100vh;
-}
 </style>

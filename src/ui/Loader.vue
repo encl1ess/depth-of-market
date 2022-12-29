@@ -1,5 +1,5 @@
 <template>
-    <div class="loader"></div>
+    <div class="loader align-self-center m-auto"></div>
 </template>
 
 <style lang="scss" scoped>
@@ -22,8 +22,6 @@
     height: 10em;
     border: 1rem dashed #2196F3;
     border-radius: 50%;
-    animation-name: rotation;
-    animation-duration: 1s;
-    animation-timing-function: linear;
+    animation: rotation 2s infinite linear;
 }
 </style>

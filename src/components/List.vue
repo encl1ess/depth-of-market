@@ -1,6 +1,6 @@
 <template>
-    <v-list>
-        <v-list-item v-for="symbol in symbols" :title="symbol.name" :subtitle="symbol.changedAt.toString()">
+    <v-list >
+        <v-list-item class="text-start" v-for="symbol in symbols" :title="symbol.name" :subtitle="symbol.changedAt.toString()">
         </v-list-item>
     </v-list>
 </template>

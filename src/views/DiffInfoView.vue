@@ -1,12 +1,9 @@
 <template>
-    <Loader v-if="isDepthLoading"/>
-    <v-container v-else class="diff-info d-flex flex-column align-start justify-start">
+    <v-container class="diff-info d-flex flex-column align-center justify-start">
         <v-select @update:model-value="onChange" class="diff-info__drop-down" width="30wv" :items="symbols" label="symbol"
             density="compact"></v-select>
         <List/>
-    
     </v-container>
-
 </template>
 
 <script>
