@@ -1,25 +1,22 @@
 <template>
-    <v-list >
-        <v-list-item class="text-start" v-for="symbol in symbols" :title="symbol.name" :subtitle="symbol.changedAt.toString()">
+    <v-list class="custom-scroll">
+        <v-list-item border class="text-start mb-3" v-for="item in items"> 
+            {{ item }}
         </v-list-item>
+
     </v-list>
 </template>
 
 <script>
 export default {
-    data() {
-        return {
-            symbols: []
-        };
-    },
-    mounted() {
-        this.eventBus.on('symbol-selected', value => {
-            this.symbols.unshift({ name: value, changedAt: new Date()})
-        })
+    props: {
+        items: Array,
     }
 }
 </script>
 
 <style lang="scss" scoped>
-
+.v-list{
+    overflow-y: auto;
+}
 </style>

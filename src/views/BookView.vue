@@ -1,23 +1,25 @@
 <template>
     <Loader v-if="isDepthLoading" />
-    <v-container v-else class="book-view d-flex flex-column">
-        <v-select @update:model-value="scrollPositionHandler" class="book-view__drop-down align-self-center mb-1"
-            :items="['asks', 'bids']" label="table"></v-select>
-        <v-container class="book-view__table d-flex flex-wrap align-start justify-center">
-            <data-table :headers="headers" :data="depthRecords.asks" id="asks" title="Asks"></data-table>
-            <data-table :headers="headers" :data="depthRecords.bids" id="bids" title="Bids"></data-table>
+    <v-container v-else class="book-view d-flex flex-column align-center ">
+        <v-select eager @update:model-value="scrollPositionHandler" class="book-view__drop-down" density="compact"
+            :items="items" placeholder="table"></v-select>
+        <div>{{ symbol }}</div>
+        <v-container class="book-view__table d-flex flex-wrap align-start justify-center m-0 p-0">
+            <data-table :headers="headers" :data="depth.asks" id="asks" title="Asks"></data-table>
+            <data-table :headers="headers" :data="depth.bids" id="bids" title="Bids"></data-table>
         </v-container>
-
     </v-container>
 </template>
 
 <script>
-import { useDepth } from '@/hooks/useDepth';
 import DataTable from '@/components/DataTable.vue';
 import Loader from '@/ui/Loader.vue';
 export default {
     components: {
         DataTable, Loader
+    },
+    props: {
+        symbol: String
     },
     data() {
         return {
@@ -34,18 +36,22 @@ export default {
                     text: 'Amount',
                     value: 'amount',
                 },
-            ]
+            ],
+            items: ['asks', 'bids'],
+            connection: null,
+            depth: {},
+            limit: 500,
+            isDepthLoading: false,
         }
     },
-    setup() {
-        const { depthRecords, isDepthLoading } = useDepth('BTCUSDT');
-        return {
-            depthRecords,
-            isDepthLoading
-        }
-    },
-    created() {
-        this.updatesSubcribe();
+    mounted() {
+        this.fetchDepth(this.symbol, this.limits)
+        this.subscribe(this.symbol)
+        this.eventBus.on('symbol-selected', (value) => {
+            this.depth = {}
+            this.connection.close()
+            this.subscribe(value)
+        })
     },
     methods: {
         scrollPositionHandler(value) {
@@ -53,33 +59,65 @@ export default {
                 behavior: "smooth"
             });
         },
-        updatesSubcribe() {
-            let socket = this.sdk.wsSubscribe('BTCUSDT');
-            socket.onopen = function (e) {
-                console.log("[open] Соединение установлено");
-                console.log("Отправляем данные на сервер");
-                socket.send("Меня зовут Джон");
+        async fetchDepth() {
+            this.isDepthLoading = true;
+            let depthSnapshot = await this.sdk.getDepth(this.symbol, this.limit) //Get a depth snapshot
+            this.isDepthLoading = false;
+            this.depth = depthSnapshot;
+            console.log(this.depth.lastUpdateId)
+        },
+        subscribe(symbol) {
+            this.connection = this.sdk.wsSubscribe(symbol)
+            let prev;
+            this.connection.onmessage = (event) => {
+                const eventDataObject = JSON.parse(event.data);
+                const { e, E, s, a, b, u, U } = eventDataObject;
+                const filteredA = a.filter(elem => elem[1] != 0);
+                const filteredB = b.filter(elem => elem[1] != 0);
+                prev = this.depth.lastUpdateId;
+                console.log(this.depth.lastUpdateId, U, u)
+                this.eventBus.emit('diff-changes', `Symbol: ${s}
+                                    Event type: ${e}
+                                    Event time: ${E}
+                                    First update ID in event: ${U}
+                                    Final update ID in event: ${u}
+                                    Bids to be updated:\n ${JSON.stringify(filteredB)}
+                                    Asks to be updated:\n ${JSON.stringify(filteredA)}`)
+           
+                    if (u <= prev) {
+                        this.depth.asks.splice(this.depth.lastUpdateId - u, filteredA.length, filteredA)
+                        this.depth.bids.splice(this.depth.lastUpdateId - u, filteredB.length, filteredB)
+                    }
+                    if ((U <= prev + 1 && u >= prev + 1)) {
+                        this.updateDepth(filteredA, filteredB)
+                        this.depth.lastUpdateId = u;
+                    }
+                    if (U == prev + 1) {
+                        this.updateDepth(filteredA, filteredB)
+                        this.depth.lastUpdateId = u;
+                    }
+                console.log(this.depth.lastUpdateId)
             };
-
-            socket.onmessage = function (event) {
-                console.log(`[message] Данные получены с сервера: ${event.data}`);
-            };
-            socket.onclose = function (event) {
+            this.connection.onclose = function (event) {
                 if (event.wasClean) {
-                    console.log(`[close] Соединение закрыто чисто, код=${event.code} причина=${event.reason}`);
+                    console.log(`[close] Соединение закрыто чисто, код=${event.code}`);
                 } else {
-                    // например, сервер убил процесс или сеть недоступна
-                    // обычно в этом случае event.code 1006
                     console.log('[close] Соединение прервано');
                 }
             };
 
-            socket.onerror = function (error) {
-                console.log(`[error]`);
+            this.connection.onerror = (error) => {
+                console.log(error);
             };
+        },
+        updateDepth(a, b) {
+            this.depth.asks.unshift(...a);
+            this.depth.asks.splice(-a.length)
+            this.depth.bids.unshift(...b);
+            this.depth.bids.splice(-b.length)
         }
+    },
 
-    }
 }
 </script>
 
@@ -91,13 +129,14 @@ export default {
         display: none;
 
         @media(max-width: 1290px) {
-            display: flex;
+            display: block;
+            width: 30%;
         }
     }
 
     &__table {
         position: relative;
-        height: 85vh;
+        height: 80vh;
         overflow-y: scroll;
 
         &::-webkit-scrollbar {

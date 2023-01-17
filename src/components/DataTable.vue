@@ -1,5 +1,5 @@
 <template>
-  <v-table class="data-table m-0 mb-10" fixed-header theme="light">
+  <v-table class="data-table m-0 mb-10 " fixed-header theme="light">
     <!-- <caption class="data-table__caption text-white text-center text-uppercase bg-blue-lighten-2"> {{ title }}</caption> -->
     <thead>
       <tr>
@@ -13,9 +13,9 @@
     </thead>
     <tbody>
       <tr v-for="item in data">
-        <td class="text-left">{{ item[0] }}</td>
-        <td class="text-left">{{ item[1] }}</td>
-        <td class="text-left">{{ item[0] * item[1] }}</td>
+        <td class="text-left">{{ parseFloat(item[0]) }}</td>
+        <td class="text-left">{{ parseFloat(item[1]) }}</td>
+        <td class="text-left">{{ parseFloat(item[0])* parseFloat(item[1]) }}</td>
       </tr>
     </tbody>
   </v-table>
@@ -37,18 +37,22 @@ export default {
 .data-table {
   width: 50%;
   min-width: max-content;
-
   .v-table__wrapper {
-
     overflow-y: scroll;
-    height: 75vh;
+    height: 80vh;
+    margin-left: 2em;
+    td{
+      width: 16%;
+    }
+    
 
     &::-webkit-scrollbar {
-      visibility: hidden;
+     
+      visibility: hidden; 
     }
 
     &:hover {
-      &::-webkit-scrollbar {
+      &::-webkit-scrollbar { 
         visibility: visible;
         background: lightgrey;
         border-radius: 2em;
@@ -63,8 +67,13 @@ export default {
 
 
   @media screen and (max-width: 1290px) {
-    width: 90%;
-
+    width: 100%;
+    .v-table__wrapper{
+      height: 65vh;
+    }
+    td{
+      min-width: 33%;
+    }
 
   }
 }
@@ -74,6 +83,10 @@ export default {
   th:nth-child(3),
   td:nth-child(3) {
     display: none;
+  }
+  td {
+    flex-shrink: no-shrink;
+    width: 45%;
   }
 }
 </style>
