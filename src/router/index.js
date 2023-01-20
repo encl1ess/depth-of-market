@@ -6,7 +6,8 @@ import MainView from '@/views/MainView'
 const routes = [
   {
     path: '/',
-    component: MainView
+    component: MainView,
+    name: 'Main'
   },
   {
     path: '/book',
@@ -21,6 +22,7 @@ const routes = [
 
 const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
+  base: process.env.BASE_URL,
   routes,
 })
 
