@@ -9,6 +9,7 @@
             <data-table :headers="headers" :data="depth.bids" id="bids" title="Bids"></data-table>
         </v-container>
     </v-container>
+
 </template>
 
 <script>
@@ -17,9 +18,6 @@ import Loader from '@/ui/Loader.vue';
 export default {
     components: {
         DataTable, Loader
-    },
-    props: {
-        symbol: String
     },
     data() {
         return {
@@ -42,13 +40,17 @@ export default {
             depth: {},
             limit: 500,
             isDepthLoading: false,
+            symbol: 'BTCUSDT'
         }
     },
-    mounted() {
-        this.fetchDepth(this.symbol, this.limits)
-        this.subscribe(this.symbol)
+    created() {
+        if(!this.connection) {
+            this.fetchDepth(this.symbol, this.limit)
+            this.subscribe(this.symbol)
+        }
         this.eventBus.on('symbol-selected', (value) => {
-            this.depth = {}
+            this.symbol = value
+            this.depth =  this.fetchDepth(value, this.limit)
             this.connection.close()
             this.subscribe(value)
         })
@@ -59,12 +61,10 @@ export default {
                 behavior: "smooth"
             });
         },
-        async fetchDepth() {
+        async fetchDepth(symbol, limit) {
             this.isDepthLoading = true;
-            let depthSnapshot = await this.sdk.getDepth(this.symbol, this.limit) //Get a depth snapshot
+            this.depth = await this.sdk.getDepth(symbol, limit) //Get a depth snapshot
             this.isDepthLoading = false;
-            this.depth = depthSnapshot;
-            console.log(this.depth.lastUpdateId)
         },
         subscribe(symbol) {
             this.connection = this.sdk.wsSubscribe(symbol)
@@ -75,7 +75,6 @@ export default {
                 const filteredA = a.filter(elem => elem[1] != 0);
                 const filteredB = b.filter(elem => elem[1] != 0);
                 prev = this.depth.lastUpdateId;
-                console.log(this.depth.lastUpdateId, U, u)
                 this.eventBus.emit('diff-changes', `Symbol: ${s}
                                     Event type: ${e}
                                     Event time: ${E}
@@ -83,22 +82,21 @@ export default {
                                     Final update ID in event: ${u}
                                     Bids to be updated:\n ${JSON.stringify(filteredB)}
                                     Asks to be updated:\n ${JSON.stringify(filteredA)}`)
-           
+                
                     if (u <= prev) {
-                        this.depth.asks.splice(this.depth.lastUpdateId - u, filteredA.length, filteredA)
-                        this.depth.bids.splice(this.depth.lastUpdateId - u, filteredB.length, filteredB)
-                    }
-                    if ((U <= prev + 1 && u >= prev + 1)) {
-                        this.updateDepth(filteredA, filteredB)
-                        this.depth.lastUpdateId = u;
-                    }
-                    if (U == prev + 1) {
-                        this.updateDepth(filteredA, filteredB)
-                        this.depth.lastUpdateId = u;
-                    }
-                console.log(this.depth.lastUpdateId)
+                        this.depth.asks.splice(this.depth.lastUpdateId - u, filteredA.length, ...filteredA)
+                        this.depth.bids.splice(this.depth.lastUpdateId - u, filteredB.length, ...filteredB)
+                    } else {
+                        if (U <= prev + 1 && u >= prev + 1 || U == prev + 1){                    
+                            this.updateDepth(filteredA, filteredB)
+                            this.depth.lastUpdateId = u;             
+                        } else if(U >= prev+1) {
+                            this.depth.lastUpdateId++;
+                            this.updateDepth(filteredA, filteredB)
+                        }   
+                    } 
             };
-            this.connection.onclose = function (event) {
+            this.connection.onclose = (event) => {
                 if (event.wasClean) {
                     console.log(`[close] Соединение закрыто чисто, код=${event.code}`);
                 } else {
@@ -111,10 +109,13 @@ export default {
             };
         },
         updateDepth(a, b) {
-            this.depth.asks.unshift(...a);
-            this.depth.asks.splice(-a.length)
-            this.depth.bids.unshift(...b);
-            this.depth.bids.splice(-b.length)
+            if(a.length > 0 && b.length > 0) {
+                this.depth.asks.unshift(...a);
+                this.depth.asks.splice(-a.length);
+                this.depth.bids.unshift(...b);
+                this.depth.bids.splice(-b.length);
+            }
+           
         }
     },
 

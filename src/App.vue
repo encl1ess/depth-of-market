@@ -3,7 +3,11 @@
     <navbar />
     <v-main class="d-flex align-start justify-center">
       <v-container class="d-flex align-start justify-center h-100 m-0">
-        <router-view :symbol="symbol"/>
+          <router-view v-slot="{Component}">
+            <keep-alive>
+              <component :is="Component" />
+             </keep-alive>
+          </router-view>
       </v-container>
     </v-main>
   </v-app>
@@ -16,14 +20,6 @@ export default {
   components: {
     Navbar
   },
-  data() {
-    return {
-      symbol: 'BTCUSDT'
-    }
-  },
-  mounted() {
-    this.eventBus.on('symbol-selected', (value) => this.symbol = value)
-  }
 }
 </script>
 
